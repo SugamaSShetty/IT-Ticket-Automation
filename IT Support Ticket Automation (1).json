@@ -1,0 +1,282 @@
+{
+  "name": "IT Support Ticket Automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f4abbdae-7c39-4efd-9287-2629776c04fe",
+      "name": "Start Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This Function Node generates 5 ticket items\nreturn [\n  {\n    json: {\n      Name: \"Avya\",\n      Email: \"avya@gmail.com\",\n      IssueType: \"wifi\",\n      Priority: \"High\",\n      Description: \"Wifi issue\",\n      Timestamp: \"2026-03-13 10:00:00\"\n    }\n  },\n  {\n    json: {\n      Name: \"Ahjay\",\n      Email: \"ahjay@gmail.com\",\n      IssueType: \"login\",\n      Priority: \"Medium\",\n      Description: \"Login failed\",\n      Timestamp: \"2026-03-13 10:05:00\"\n    }\n  },\n  {\n    json: {\n      Name: \"Akash\",\n      Email: \"akash@gmail.com\",\n      IssueType: \"software\",\n      Priority: \"Low\",\n      Description: \"App crash\",\n      Timestamp: \"2026-03-12 10:10:00\"\n    }\n  },\n  {\n    json: {\n      Name: \"Sapna\",\n      Email: \"sapna@gmail\",\n      IssueType: \"hardware\",\n      Priority: \"Medium\",\n      Description: \"Hardware broken\",\n      Timestamp: \"2026-03-13 05:15:00\"\n    }\n  },\n  {\n    json: {\n      Name: \"Sugama\",\n      Email: \"sugama@gmail.com\",\n      IssueType: \"other\",\n      Priority: \"High\",\n      Description: \"Other issue\",\n      Timestamp: \"2026-03-13 06:20:00\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8f15b8c6-5bc6-4f1b-a4dc-b4fc0029c811",
+      "name": "Generate Tickets"
+    },
+    {
+      "parameters": {
+        "jsCode": "let validPriorities = [\"High\", \"Medium\", \"Low\"];\nlet emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nitems.forEach(item => {\n    item.json.Error = \"\";        // initialize error\n    item.json.Rejected = false;  // initialize rejected flag\n\n    // Validate email\n    if (!emailRegex.test(item.json.Email)) {\n        item.json.Error += \"Invalid Email; \";\n        item.json.Rejected = true;\n    }\n\n    // Validate priority\n    if (!validPriorities.includes(item.json.Priority)) {\n        item.json.Error += \"Invalid Priority; \";\n        item.json.Rejected = true;\n    }\n});\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3e3c1f53-b7dc-417b-88e4-9466b6000861",
+      "name": "Validate Tickets"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach(item => {\n    item.json.Name = item.json.Name.trim();\n    item.json.Email = item.json.Email.trim().toLowerCase();\n    item.json.IssueType = item.json.IssueType.trim().toLowerCase();\n    item.json.Priority = item.json.Priority.trim();\n    item.json.Description = item.json.Description.trim();\n});\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        96
+      ],
+      "id": "32b2d5cc-e9fd-4a88-8c59-dc0447ed081f",
+      "name": "Normalize Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach((item, index) => {\n    item.json.TicketID = \"TICKET-\" + (1000 + index);\n});\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        96
+      ],
+      "id": "8b13a661-17b5-43b8-879f-eb55af2a6fd8",
+      "name": "Generate TicketID"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach(item => {\n    switch(item.json.IssueType) {\n        case \"wifi\":\n            item.json.Team = \"Network\";\n            break;\n        case \"login\":\n            item.json.Team = \"IT Support\";\n            break;\n        case \"software\":\n            item.json.Team = \"Applications\";\n            break;\n        case \"hardware\":\n            item.json.Team = \"Infrastructure\";\n            break;\n        default:\n            item.json.Team = \"General\";\n    }\n});\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        96
+      ],
+      "id": "606c6f37-9272-4fc7-a36b-c1a0d14a6bad",
+      "name": "Route Tickets2"
+    },
+    {
+      "parameters": {
+        "jsCode": "items.forEach(item => {\n    let slaHours;\n    switch(item.json.Priority) {\n        case \"High\": slaHours = 4; break;\n        case \"Medium\": slaHours = 24; break;\n        case \"Low\": slaHours = 72; break;\n    }\n    let submitted = new Date(item.json.Timestamp);\n    let deadline = new Date(submitted.getTime() + slaHours*60*60*1000);\n    item.json.SLA_Deadline = deadline.toISOString();\n});\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        96
+      ],
+      "id": "a7a457c8-ad51-460b-b33c-75c26b360f14",
+      "name": "Calculate SLA"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fields = [\"TicketID\",\"Name\",\"Email\",\"IssueType\",\"Priority\",\"Description\",\"Team\",\"SLA_Deadline\"];\n\nconst csv = items.map(i => fields.map(f => `\"${i.json[f]}\"`).join(\",\")).join(\"\\n\");\n\n// Add header\nconst header = fields.join(\",\");\nconst content = header + \"\\n\" + csv;\n\nitems[0].binary = {};\nitems[0].binary.data = {\n    data: Buffer.from(content),\n    mimeType: 'text/csv',\n    fileName: 'Processed_Tickets.csv'\n};\n\nreturn [items[0]];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        96
+      ],
+      "id": "966131cd-58fd-407c-952d-ec992485c665",
+      "name": "Convert JSON to CSV"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "51766c17-b541-4a16-ab52-b328ffa524b0",
+              "leftValue": "Rejected",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "efc4d7f8-283b-4b84-add8-0ac21962b404",
+      "name": "Rejected Ticket_if"
+    },
+    {
+      "parameters": {
+        "jsCode": "let total = items.length;\nlet high = items.filter(i => i.json.Priority === \"High\").length;\nlet medium = items.filter(i => i.json.Priority === \"Medium\").length;\nlet low = items.filter(i => i.json.Priority === \"Low\").length;\n\nreturn [\n    { json: { TotalTickets: total, High: high, Medium: medium, Low: low } }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        240
+      ],
+      "id": "d8792a2f-2920-4a76-887a-5b9569ff8886",
+      "name": "summary "
+    },
+    {
+      "parameters": {
+        "jsCode": "let teamCounts = {\n    \"Network\": 0,\n    \"IT Support\": 0,\n    \"Applications\": 0,\n    \"Infrastructure\": 0,\n    \"General\": 0\n};\n\nitems.forEach(item => {\n    const team = item.json.Team;\n    if (teamCounts.hasOwnProperty(team)) {\n        teamCounts[team]++;\n    } else {\n        teamCounts[\"General\"]++;\n    }\n});\n\nlet output = [];\nfor (const [team, count] of Object.entries(teamCounts)) {\n    output.push({ json: { Team: team, Tickets: count } });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        400
+      ],
+      "id": "62908059-a94d-4ef1-a390-d4a48201df6e",
+      "name": "Summary of ticket"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Tickets": {
+      "main": [
+        [
+          {
+            "node": "Validate Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Tickets": {
+      "main": [
+        [
+          {
+            "node": "Rejected Ticket_if",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Text": {
+      "main": [
+        [
+          {
+            "node": "Generate TicketID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate TicketID": {
+      "main": [
+        [
+          {
+            "node": "Route Tickets2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Tickets2": {
+      "main": [
+        [
+          {
+            "node": "Calculate SLA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate SLA": {
+      "main": [
+        [
+          {
+            "node": "Convert JSON to CSV",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "summary ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summary of ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejected Ticket_if": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Normalize Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f7ce406c-322d-4b13-8269-ddff5e0f6094",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8768be3f8f6a1ed5debbd0595dbad717f0050c3aa51723a2862ae9a0774aeb1d"
+  },
+  "id": "C0lgDwvQi7cf9DoQ",
+  "tags": []
+}
